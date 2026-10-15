@@ -1,0 +1,30 @@
+<div class="login-screen">
+  <form class="login-card" autocomplete="off" (submit)="onSubmit(); $event.preventDefault()">
+    <span class="brand-logo brand-logo-lg" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="26" height="26">
+        <path d="M6 8.5 12 5.5l6 3v7l-6 3-6-3v-7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        <path d="M6 8.5 12 11.5l6-3M12 11.5v7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <h1>Inventário</h1>
+    <p class="login-sub">Gestão de equipamentos · faça login para continuar</p>
+
+    <label class="field">
+      <span>Usuário</span>
+      <input type="text" placeholder="Ex.: admin" autocomplete="username" [formField]="loginForm.username" />
+    </label>
+    <label class="field">
+      <span>Senha</span>
+      <input type="password" placeholder="••••••" autocomplete="current-password" [formField]="loginForm.senha" />
+    </label>
+
+    @if (erro()) {
+      <p class="form-error">{{ erro() }}</p>
+    }
+
+    <button class="btn btn-primary btn-block" type="submit" [disabled]="loginForm().invalid() || entrando()">
+      Entrar
+    </button>
+    <p class="login-hint">Acesso inicial: <code>admin</code> / <code>admin123</code></p>
+  </form>
+</div>

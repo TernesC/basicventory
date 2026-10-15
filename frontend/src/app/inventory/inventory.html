@@ -1,0 +1,217 @@
+@if (!secaoValida()) {
+  <header class="topbar">
+    <div class="topbar-title">
+      <span class="section-emoji" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M6 8.5 12 5.5l6 3v7l-6 3-6-3v-7Z M6 8.5 12 11.5l6-3 M12 11.5v7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div>
+        <h1>Seção não encontrada</h1>
+        <p class="section-sub">A seção "{{ secaoAtual() }}" não existe.</p>
+      </div>
+    </div>
+  </header>
+} @else {
+  <header class="topbar">
+    <div class="topbar-title">
+      <span class="section-emoji" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path [attr.d]="secaoInfo()?.icon ?? ''" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div>
+        <h1>{{ secaoAtual() }}</h1>
+        <p class="section-sub">{{ subtitulo() }}</p>
+      </div>
+    </div>
+
+    <div class="topbar-tools">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+          <path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        </svg>
+        <input #searchInput type="search" [placeholder]="'Buscar em ' + secaoAtual() + '…'"
+          autocomplete="off" spellcheck="false" aria-label="Buscar nesta seção"
+          [value]="busca()" (input)="onSearchInput($any($event.target).value)" />
+      </div>
+      <div class="filter-seg" role="group" aria-label="Filtrar por situação">
+        <button type="button" [class.active]="filtroSituacao() === 'todos'"
+          [attr.aria-pressed]="filtroSituacao() === 'todos'" (click)="definirFiltro('todos')">
+          Todos
+        </button>
+        <button type="button" [class.active]="filtroSituacao() === 'estoque'"
+          [attr.aria-pressed]="filtroSituacao() === 'estoque'" (click)="definirFiltro('estoque')"
+          title="Atribuição vazia ou com 'estoque'">
+          Em estoque
+        </button>
+        <button type="button" [class.active]="filtroSituacao() === 'atribuido'"
+          [attr.aria-pressed]="filtroSituacao() === 'atribuido'" (click)="definirFiltro('atribuido')"
+          title="Atribuição preenchida com outro valor">
+          Atribuídos
+        </button>
+      </div>
+      <button class="btn btn-primary" type="button" (click)="abrirNovo()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        Adicionar item
+      </button>
+    </div>
+  </header>
+
+  <section class="card" id="inventoryCard">
+    @if (carregando()) {
+      <div class="loading">
+        <span class="spinner" aria-hidden="true"></span> Carregando itens…
+      </div>
+    } @else if (erro()) {
+      <div class="empty" id="errorState">
+        <div class="empty-icon empty-icon-error" aria-hidden="true">⚠️</div>
+        <h3>Não foi possível carregar os itens</h3>
+        <p>{{ mensagemErro() }}</p>
+        <button class="btn btn-primary" type="button" (click)="itens.reload()">Tentar novamente</button>
+      </div>
+    } @else if (lista().length === 0) {
+      <div class="empty" id="emptyState">
+        <div class="empty-icon" aria-hidden="true">📦</div>
+        @if (buscando() || filtrandoSituacao()) {
+          <h3>Nenhum resultado</h3>
+          @if (buscando() && filtrandoSituacao()) {
+            <p>Nada encontrado para “{{ termoAtivo() }}” em {{ secaoAtual() }} com este filtro.</p>
+          } @else if (buscando()) {
+            <p>Nada encontrado para “{{ termoAtivo() }}” em {{ secaoAtual() }}.</p>
+          } @else if (filtroSituacao() === 'estoque') {
+            <p>Nenhum item em estoque em {{ secaoAtual() }}.</p>
+          } @else {
+            <p>Nenhum item atribuído em {{ secaoAtual() }}.</p>
+          }
+          @if (filtrandoSituacao()) {
+            <button class="btn btn-ghost" type="button" (click)="definirFiltro('todos')">Limpar filtro</button>
+          }
+        } @else {
+          <h3>Nenhum item em {{ secaoAtual() }}</h3>
+          <p>Cadastre o primeiro item desta seção.</p>
+          <button class="btn btn-primary" type="button" (click)="abrirNovo()">Adicionar item</button>
+        }
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="sortable" [attr.aria-sort]="ariaOrdem('nome')">
+                <button class="th-sort" type="button" (click)="alternarOrdem('nome')" title="Ordenar por nome">
+                  <span>Nome do Item</span><span class="sort-ind" [class.ativo]="ordenacao().coluna === 'nome'" aria-hidden="true">{{ indicadorOrdem('nome') || '↕' }}</span>
+                </button>
+              </th>
+              <th class="num sortable" [attr.aria-sort]="ariaOrdem('quantidade')">
+                <button class="th-sort" type="button" (click)="alternarOrdem('quantidade')" title="Ordenar por quantidade">
+                  <span>Qtd.</span><span class="sort-ind" [class.ativo]="ordenacao().coluna === 'quantidade'" aria-hidden="true">{{ indicadorOrdem('quantidade') || '↕' }}</span>
+                </button>
+              </th>
+              <th class="sortable" [attr.aria-sort]="ariaOrdem('localizacao')">
+                <button class="th-sort" type="button" (click)="alternarOrdem('localizacao')" title="Ordenar por localização">
+                  <span>Localização</span><span class="sort-ind" [class.ativo]="ordenacao().coluna === 'localizacao'" aria-hidden="true">{{ indicadorOrdem('localizacao') || '↕' }}</span>
+                </button>
+              </th>
+              <th class="sortable" [attr.aria-sort]="ariaOrdem('serial')">
+                <button class="th-sort" type="button" (click)="alternarOrdem('serial')" title="Ordenar por serial">
+                  <span>Serial</span><span class="sort-ind" [class.ativo]="ordenacao().coluna === 'serial'" aria-hidden="true">{{ indicadorOrdem('serial') || '↕' }}</span>
+                </button>
+              </th>
+              <th class="sortable" [attr.aria-sort]="ariaOrdem('patrimonio')">
+                <button class="th-sort" type="button" (click)="alternarOrdem('patrimonio')" title="Ordenar por patrimônio">
+                  <span>Patrimônio</span><span class="sort-ind" [class.ativo]="ordenacao().coluna === 'patrimonio'" aria-hidden="true">{{ indicadorOrdem('patrimonio') || '↕' }}</span>
+                </button>
+              </th>
+              <th class="sortable" [attr.aria-sort]="ariaOrdem('danificado')">
+                <button class="th-sort" type="button" (click)="alternarOrdem('danificado')" title="Ordenar por danificado">
+                  <span>Danificado</span><span class="sort-ind" [class.ativo]="ordenacao().coluna === 'danificado'" aria-hidden="true">{{ indicadorOrdem('danificado') || '↕' }}</span>
+                </button>
+              </th>
+              <th class="sortable" [attr.aria-sort]="ariaOrdem('atribuicao')">
+                <button class="th-sort" type="button" (click)="alternarOrdem('atribuicao')" title="Ordenar por atribuição">
+                  <span>Atribuição</span><span class="sort-ind" [class.ativo]="ordenacao().coluna === 'atribuicao'" aria-hidden="true">{{ indicadorOrdem('atribuicao') || '↕' }}</span>
+                </button>
+              </th>
+              <th class="col-obs sortable" [attr.aria-sort]="ariaOrdem('observacao')">
+                <button class="th-sort" type="button" (click)="alternarOrdem('observacao')" title="Ordenar por observação">
+                  <span>Observação</span><span class="sort-ind" [class.ativo]="ordenacao().coluna === 'observacao'" aria-hidden="true">{{ indicadorOrdem('observacao') || '↕' }}</span>
+                </button>
+              </th>
+              <th class="col-actions">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of lista(); track item.id) {
+              <tr>
+                <td>
+                  <span class="cell-name" [class.is-estoque]="classeNome(item) === 'is-estoque'" [class.is-descarte]="classeNome(item) === 'is-descarte'" [title]="item.nome">{{ item.nome }}</span>
+                  @if (item.criadoEm && formatDate(item.criadoEm)) {
+                    <div class="cell-muted" style="font-size:12px">cadastrado em {{ formatDate(item.criadoEm) }}</div>
+                  }
+                </td>
+                <td class="num"><span class="qty-badge">{{ item.quantidade }}</span></td>
+                <td>
+                  @if (item.localizacao.trim()) {
+                    {{ item.localizacao }}
+                  } @else {
+                    <span class="cell-muted">—</span>
+                  }
+                </td>
+                <td class="cell-mono">
+                  @if (item.serial.trim()) {
+                    {{ item.serial }}
+                  } @else {
+                    <span class="cell-muted">—</span>
+                  }
+                </td>
+                <td class="cell-mono">
+                  @if (item.patrimonio.trim()) {
+                    {{ item.patrimonio }}
+                  } @else {
+                    <span class="cell-muted">—</span>
+                  }
+                </td>
+                <td>
+                  @if (item.danificado) {
+                    <span class="chip bad">Sim</span>
+                  } @else {
+                    <span class="chip ok">Não</span>
+                  }
+                </td>
+                <td>
+                  @if (item.atribuicao.trim()) {
+                    {{ item.atribuicao }}
+                  } @else {
+                    <span class="cell-muted">—</span>
+                  }
+                </td>
+                <td class="col-obs">
+                  <div class="cell-obs" [title]="item.observacao || ''">
+                    @if (item.observacao.trim()) {
+                      {{ item.observacao }}
+                    } @else {
+                      <span class="cell-muted">—</span>
+                    }
+                  </div>
+                </td>
+                <td class="actions">
+                  <span class="row-actions">
+                    <button class="icon-btn" type="button" title="Editar item" aria-label="Editar item" (click)="editar(item)">
+                      <svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m14.5 7.5 2 2" stroke="currentColor" stroke-width="1.8"/></svg>
+                    </button>
+                    <button class="icon-btn danger" type="button" title="Excluir item" aria-label="Excluir item" (click)="excluir(item)">
+                      <svg viewBox="0 0 24 24"><path d="M4 7h16M9.5 7V4.8h5V7M6.5 7l.9 12.2h9.2L17.5 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 10.5v6M14 10.5v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    </button>
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+}
+
+@if (dialogAberto()) {
+  <app-item-dialog [item]="editando()" [secaoAtual]="secaoAtual()"
+    (fechado)="dialogAberto.set(false)" (salvo)="onSalvo($event)" />
+}

@@ -1,0 +1,61 @@
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22">
+          <path d="M6 8.5 12 5.5l6 3v7l-6 3-6-3v-7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+          <path d="M6 8.5 12 11.5l6-3M12 11.5v7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <strong>Inventário</strong>
+        <small>Gestão de equipamentos</small>
+      </span>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Seções do inventário">
+      @for (sec of sections; track sec.id) {
+        <a class="nav-item" [routerLink]="['/secao', sec.id]" routerLinkActive="active">
+          <span class="nav-emoji" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path [attr.d]="sec.icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="nav-label">{{ sec.id }}</span>
+          <span class="nav-count">{{ contaSecao(sec.id) }}</span>
+        </a>
+      }
+      <div class="nav-separator">Sistema</div>
+      <a class="nav-item" [routerLink]="['/config']" routerLinkActive="active">
+        <span class="nav-emoji" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 8h9 M17 8h3 M4 16h3 M11 16h9"/><circle cx="15" cy="8" r="2"/><circle cx="9" cy="16" r="2"/></svg>
+        </span>
+        <span class="nav-label">Configurações</span>
+      </a>
+    </nav>
+
+    <div class="side-stats">
+      <div class="side-stat">
+        <span>Itens cadastrados</span>
+        <strong>{{ resumo.value()?.total ?? '—' }}</strong>
+      </div>
+      <div class="side-stat">
+        <span>Unidades em estoque</span>
+        <strong>{{ resumo.value()?.unidades ?? '—' }}</strong>
+      </div>
+    </div>
+
+    <div class="user-box">
+      <span class="user-avatar" aria-hidden="true">{{ inicial() }}</span>
+      <span class="user-name" [title]="nomeUsuario()">{{ nomeUsuario() }}</span>
+      <button class="icon-btn icon-btn-dark" type="button" title="Sair" aria-label="Sair" (click)="logout()">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5.5A1.5 1.5 0 0 1 4 19.5v-15A1.5 1.5 0 0 1 5.5 3H9M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <main class="content">
+    <router-outlet />
+    <footer class="page-footer">
+      SQLite + TypeORM · banco salvo em <code>data/inventario.sqlite</code>
+    </footer>
+  </main>
+</div>

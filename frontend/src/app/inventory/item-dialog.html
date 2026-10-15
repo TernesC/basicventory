@@ -1,0 +1,117 @@
+<div class="overlay" (click)="onOverlayClick($event)" (keydown)="onOverlayKeydown($event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h2 id="modalTitle">{{ item() ? 'Editar item' : 'Adicionar item' }}</h2>
+      <button class="icon-btn" type="button" data-close aria-label="Fechar" (click)="fechado.emit()">
+        <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <form novalidate (submit)="onSubmit(); $event.preventDefault()">
+      <div class="grid">
+        <label class="field span-2">
+          <span>Nome do Item <b class="req">*</b></span>
+          <div class="autocomplete">
+            <input type="text" placeholder="Ex.: Dell Latitude 5540" autocomplete="off"
+              role="combobox" aria-controls="nameSuggest" aria-autocomplete="list"
+              [attr.aria-expanded]="nomeLista().length > 0"
+              [formField]="itemForm.nome" (input)="agendaSugestao('nome')"
+              (keydown)="onSugestaoKeydown($event, 'nome')" />
+            @if (nomeLista().length > 0) {
+              <ul class="suggest" id="nameSuggest" role="listbox" aria-label="Itens com nome parecido">
+                @for (sug of nomeLista(); track $index) {
+                  <li role="option" [class.active]="$index === nomeIndice()"
+                    [attr.aria-selected]="$index === nomeIndice()" (mousedown)="escolher($index, 'nome')">
+                    <span class="suggest-name" [innerHTML]="destaque(sug.valor, model().nome)"></span>
+                    <span class="suggest-meta">{{ metaNome(sug) }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Quantidade</span>
+          <input #quantInput type="number" [formField]="itemForm.quantidade" />
+        </label>
+
+        <label class="field">
+          <span>Seção</span>
+          <select [formField]="itemForm.categoria" (change)="onCategoriaChange()">
+            @for (sec of sections; track sec.id) {
+              <option [value]="sec.id">{{ sec.id }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Localização</span>
+          <div class="autocomplete">
+            <input type="text" placeholder="Ex.: Almoxarifado · Prateleira 2" autocomplete="off"
+              role="combobox" aria-controls="locSuggest" aria-autocomplete="list"
+              [attr.aria-expanded]="locLista().length > 0"
+              [formField]="itemForm.localizacao" (input)="agendaSugestao('localizacao')"
+              (keydown)="onSugestaoKeydown($event, 'localizacao')" />
+            @if (locLista().length > 0) {
+              <ul class="suggest" id="locSuggest" role="listbox" aria-label="Localizações parecidas">
+                @for (sug of locLista(); track $index) {
+                  <li role="option" [class.active]="$index === locIndice()"
+                    [attr.aria-selected]="$index === locIndice()" (mousedown)="escolher($index, 'localizacao')">
+                    <span class="suggest-name" [innerHTML]="destaque(sug.valor, model().localizacao)"></span>
+                    <span class="suggest-meta">{{ metaLoc(sug) }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Serial</span>
+          <input #serialInput type="text" placeholder="Ex.: SN8F2KJ21" [formField]="itemForm.serial" />
+        </label>
+
+        <label class="field">
+          <span>Patrimônio</span>
+          <input type="text" placeholder="Ex.: PT-10234" [formField]="itemForm.patrimonio" />
+        </label>
+
+        <label class="field">
+          <span>Atribuição</span>
+          <input type="text" placeholder="Ex.: Carlos · RH" [formField]="itemForm.atribuicao" />
+        </label>
+
+        <fieldset class="field span-2 radio-group">
+          <legend>Danificado</legend>
+          <label class="radio">
+            <input type="radio" value="nao" [formField]="itemForm.danificadoStr" />
+            <span class="radio-box" aria-hidden="true"></span>
+            Não
+          </label>
+          <label class="radio">
+            <input type="radio" value="sim" [formField]="itemForm.danificadoStr" />
+            <span class="radio-box" aria-hidden="true"></span>
+            Sim
+          </label>
+        </fieldset>
+
+        <label class="field span-2">
+          <span>Observação</span>
+          <textarea rows="3" placeholder="Detalhes, condições, acessórios, pendências…" [formField]="itemForm.observacao"></textarea>
+        </label>
+      </div>
+
+      @if (erro()) {
+        <p class="form-error">{{ erro() }}</p>
+      }
+
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" data-close (click)="fechado.emit()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="salvando()">
+          {{ item() ? 'Salvar alterações' : 'Salvar item' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

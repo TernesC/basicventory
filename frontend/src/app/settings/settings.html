@@ -1,0 +1,150 @@
+<div class="settings-grid">
+  <div class="card settings-card">
+    <h2>🎨 Aparência</h2>
+    <p class="settings-desc">Escolha um tema ou personalize as cores.</p>
+    <div class="theme-grid">
+      @for (t of THEMES; track t.id) {
+        <button
+          type="button"
+          class="theme-card"
+          [class.active]="theme.tema().nome === t.id"
+          (click)="aplicarTema(t.id)"
+        >
+          <span class="theme-preview">
+            @for (c of previewCores(t); track $index) {
+              <i [style.background]="c"></i>
+            }
+          </span>
+          <span>
+            <span class="theme-name">{{ t.emoji }} {{ t.nome }}</span>
+            <span class="theme-desc">{{ t.desc }}</span>
+          </span>
+        </button>
+      }
+    </div>
+
+    @if (theme.tema().nome === 'custom') {
+      <div class="custom-colors">
+        <label class="color-field">
+          <span>Cor principal</span>
+          <input type="color" [value]="colorBrand()" (input)="colorBrand.set($any($event.target).value)" />
+        </label>
+        <label class="color-field">
+          <span>Fundo</span>
+          <input type="color" [value]="colorBg()" (input)="colorBg.set($any($event.target).value)" />
+        </label>
+        <label class="color-field">
+          <span>Cartões</span>
+          <input type="color" [value]="colorSurface()" (input)="colorSurface.set($any($event.target).value)" />
+        </label>
+        <label class="color-field">
+          <span>Menu lateral</span>
+          <input type="color" [value]="colorSidebar()" (input)="colorSidebar.set($any($event.target).value)" />
+        </label>
+        <div class="custom-actions">
+          <button class="btn btn-ghost btn-sm" type="button" (click)="redefinirCores()">Redefinir</button>
+          <button class="btn btn-primary btn-sm" type="button" (click)="aplicarCores()">Aplicar cores</button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="card settings-card">
+    <h2>👤 Usuários</h2>
+    <p class="settings-desc">Cadastro simples, só usuário e senha.</p>
+    <form class="user-form" autocomplete="off" (submit)="onCriar(); $event.preventDefault()">
+      <label class="field">
+        <span>Usuário</span>
+        <input type="text" placeholder="Ex.: maria" [formField]="userForm.username" />
+        @if (userForm.username().touched() && userForm.username().errors().length) {
+          <span class="form-error">{{ userForm.username().errors()[0].message }}</span>
+        }
+      </label>
+      <label class="field">
+        <span>Senha</span>
+        <input type="password" placeholder="Mínimo 4 caracteres" [formField]="userForm.senha" />
+        @if (userForm.senha().touched() && userForm.senha().errors().length) {
+          <span class="form-error">{{ userForm.senha().errors()[0].message }}</span>
+        }
+      </label>
+      <button class="btn btn-primary btn-sm" type="submit">Criar usuário</button>
+    </form>
+    @if (erroForm()) {
+      <p class="form-error">{{ erroForm() }}</p>
+    }
+    <ul class="user-list">
+      @for (u of usuarios.value() ?? []; track u.id) {
+        <li class="user-row">
+          <span class="user-avatar">{{ inicial(u.username) }}</span>
+          <strong [title]="u.username">{{ u.username }}</strong>
+          @if (u.id === eu()?.id) {
+            <span class="user-tag">você</span>
+          } @else {
+            <button
+              class="icon-btn danger"
+              type="button"
+              (click)="excluirUsuario(u)"
+              [title]="'Excluir ' + u.username"
+              aria-label="Excluir usuário"
+            >🗑️</button>
+          }
+          <small>{{ formatDate(u.criadoEm) }}</small>
+        </li>
+      }
+    </ul>
+  </div>
+
+  <div class="card settings-card settings-card-wide">
+    <div class="logs-head">
+      <div>
+        <h2>🧾 Logs</h2>
+        <p class="settings-desc">Quem fez o quê no sistema (login, itens, usuários).</p>
+      </div>
+      <div class="logs-tools">
+        <input
+          type="search"
+          placeholder="Filtrar logs…"
+          autocomplete="off"
+          aria-label="Filtrar logs"
+          [value]="filtro()"
+          (input)="onFiltroInput($event)"
+        />
+        <select aria-label="Quantidade de logs" [value]="limite()" (change)="onLimiteChange($event)">
+          <option value="100">100</option>
+          <option value="200">200</option>
+          <option value="500">500</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" type="button" (click)="logs.reload()">Atualizar</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="table table-logs">
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Usuário</th>
+            <th>Ação</th>
+            <th>Detalhes</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of logs.value() ?? []; track $index) {
+            <tr>
+              <td class="cell-mono">{{ formatDateTime(l.criadoEm) }}</td>
+              <td>{{ l.usuario ? l.usuario : '—' }}</td>
+              <td><span class="log-acao">{{ l.acao }}</span></td>
+              <td>{{ l.detalhes ? l.detalhes : '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if ((logs.value() ?? []).length === 0 && !logs.isLoading()) {
+      <div class="empty" id="logsEmpty">
+        <div class="empty-icon" aria-hidden="true">🧾</div>
+        <h3>Nenhum log encontrado</h3>
+        <p>Ajuste o filtro ou aguarde novas atividades.</p>
+      </div>
+    }
+  </div>
+</div>

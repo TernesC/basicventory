@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="claro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inventário · Gestão de Equipamentos</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%232563eb'/%3E%3Cpath d='M6 8.5 12 5.5l6 3v7l-6 3-6-3v-7Z' fill='none' stroke='white' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M6 8.5 12 11.5l6-3M12 11.5v7' fill='none' stroke='white' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script>
+    // Aplica o tema salvo antes da pintura (evita flash do tema claro).
+    try {
+      var t = JSON.parse(localStorage.getItem("inventario.tema") || "null");
+      if (t && t.nome) {
+        document.documentElement.setAttribute("data-theme", t.nome);
+        if (t.nome === "custom" && t.custom) {
+          var r = document.documentElement.style;
+          if (t.custom.brand) r.setProperty("--brand", t.custom.brand);
+          if (t.custom.bg) r.setProperty("--bg", t.custom.bg);
+          if (t.custom.surface) r.setProperty("--surface", t.custom.surface);
+          if (t.custom.sidebar) r.setProperty("--sidebar", t.custom.sidebar);
+        }
+      }
+    } catch (e) { /* tema padrão */ }
+  </script>
+</head>
+<body>
+  <!-- ==================== LOGIN ==================== -->
+  <div class="login-screen" id="loginScreen">
+    <form class="login-card" id="loginForm" autocomplete="off">
+      <span class="brand-logo brand-logo-lg" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26">
+          <path d="M6 8.5 12 5.5l6 3v7l-6 3-6-3v-7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+          <path d="M6 8.5 12 11.5l6-3M12 11.5v7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <h1>Inventário</h1>
+      <p class="login-sub">Gestão de equipamentos · faça login para continuar</p>
+
+      <label class="field">
+        <span>Usuário</span>
+        <input id="loginUser" name="username" type="text" placeholder="Ex.: admin" autocomplete="username" required />
+      </label>
+      <label class="field">
+        <span>Senha</span>
+        <input id="loginPass" name="senha" type="password" placeholder="••••••" autocomplete="current-password" required />
+      </label>
+
+      <p class="form-error" id="loginError" hidden></p>
+
+      <button class="btn btn-primary btn-block" type="submit" id="btnLogin">Entrar</button>
+      <p class="login-hint">Acesso inicial: <code>admin</code> / <code>admin123</code></p>
+    </form>
+  </div>
+
+  <!-- ==================== APP ==================== -->
+  <div class="layout" id="appLayout" hidden>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22">
+            <path d="M6 8.5 12 5.5l6 3v7l-6 3-6-3v-7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            <path d="M6 8.5 12 11.5l6-3M12 11.5v7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <strong>Inventário</strong>
+          <small>Gestão de equipamentos</small>
+        </span>
+      </div>
+
+      <nav class="nav" id="nav" aria-label="Seções do inventário"></nav>
+
+      <div class="side-stats">
+        <div class="side-stat">
+          <span>Itens cadastrados</span>
+          <strong id="statItens">—</strong>
+        </div>
+        <div class="side-stat">
+          <span>Unidades em estoque</span>
+          <strong id="statUnidades">—</strong>
+        </div>
+      </div>
+
+      <div class="user-box" id="userBox">
+        <span class="user-avatar" id="userAvatar" aria-hidden="true">?</span>
+        <span class="user-name" id="userName">—</span>
+        <button class="icon-btn icon-btn-dark" id="btnLogout" type="button" title="Sair" aria-label="Sair">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5.5A1.5 1.5 0 0 1 4 19.5v-15A1.5 1.5 0 0 1 5.5 3H9M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div class="topbar-title">
+          <span class="section-emoji" id="sectionEmoji" aria-hidden="true">💻</span>
+          <div>
+            <h1 id="sectionTitle">Notebooks</h1>
+            <p class="section-sub" id="sectionSub">Carregando…</p>
+          </div>
+        </div>
+
+        <div class="topbar-tools" id="topbarTools">
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </svg>
+            <input id="searchInput" type="search" placeholder="Buscar…" autocomplete="off" spellcheck="false" aria-label="Buscar nesta seção" />
+          </div>
+          <button class="btn btn-primary" id="btnAdd" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            Adicionar item
+          </button>
+        </div>
+      </header>
+
+      <!-- Inventário -->
+      <section class="card" id="inventoryCard">
+        <div class="table-wrap" id="tableWrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Nome do Item</th>
+                <th class="num">Qtd.</th>
+                <th>Localização</th>
+                <th>Serial</th>
+                <th>Patrimônio</th>
+                <th>Danificado</th>
+                <th>Atribuição</th>
+                <th class="col-obs">Observação</th>
+                <th class="col-actions">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="empty" id="emptyState" hidden>
+          <div class="empty-icon" aria-hidden="true">📦</div>
+          <h3 id="emptyTitle">Nenhum item nesta seção</h3>
+          <p id="emptyText">Clique em “Adicionar item” para cadastrar o primeiro.</p>
+          <button class="btn btn-primary" id="btnAddEmpty" type="button">Adicionar item</button>
+        </div>
+
+        <div class="loading" id="loadingState" hidden>
+          <span class="spinner" aria-hidden="true"></span> Carregando itens…
+        </div>
+
+        <div class="empty" id="errorState" hidden>
+          <div class="empty-icon empty-icon-error" aria-hidden="true">⚠️</div>
+          <h3>Não foi possível carregar os itens</h3>
+          <p id="errorText">Erro ao buscar os dados.</p>
+          <button class="btn btn-primary" id="btnRetry" type="button">Tentar novamente</button>
+        </div>
+      </section>
+
+      <!-- Configurações -->
+      <section id="settingsView" hidden>
+        <div class="settings-grid">
+          <div class="card settings-card">
+            <h2>🎨 Aparência</h2>
+            <p class="settings-desc">Escolha um tema ou personalize as cores.</p>
+            <div class="theme-grid" id="themeGrid"></div>
+
+            <div class="custom-colors" id="customColors" hidden>
+              <label class="color-field">
+                <span>Cor principal</span>
+                <input type="color" id="colorBrand" value="#2563eb" />
+              </label>
+              <label class="color-field">
+                <span>Fundo</span>
+                <input type="color" id="colorBg" value="#f1f4f9" />
+              </label>
+              <label class="color-field">
+                <span>Cartões</span>
+                <input type="color" id="colorSurface" value="#ffffff" />
+              </label>
+              <label class="color-field">
+                <span>Menu lateral</span>
+                <input type="color" id="colorSidebar" value="#0f172a" />
+              </label>
+              <div class="custom-actions">
+                <button class="btn btn-ghost btn-sm" id="btnCustomReset" type="button">Redefinir</button>
+                <button class="btn btn-primary btn-sm" id="btnCustomApply" type="button">Aplicar cores</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card settings-card">
+            <h2>👤 Usuários</h2>
+            <p class="settings-desc">Cadastro simples, só usuário e senha.</p>
+            <form id="userForm" class="user-form" autocomplete="off">
+              <label class="field">
+                <span>Usuário</span>
+                <input id="newUsername" type="text" maxlength="60" placeholder="Ex.: maria" required />
+              </label>
+              <label class="field">
+                <span>Senha</span>
+                <input id="newPassword" type="password" maxlength="100" placeholder="Mínimo 4 caracteres" required />
+              </label>
+              <button class="btn btn-primary btn-sm" id="btnUserCreate" type="submit">Criar usuário</button>
+            </form>
+            <p class="form-error" id="userFormError" hidden></p>
+            <ul class="user-list" id="userList"></ul>
+          </div>
+
+          <div class="card settings-card settings-card-wide">
+            <div class="logs-head">
+              <div>
+                <h2>🧾 Logs</h2>
+                <p class="settings-desc">Quem fez o quê no sistema (login, itens, usuários).</p>
+              </div>
+              <div class="logs-tools">
+                <input id="logSearch" type="search" placeholder="Filtrar logs…" autocomplete="off" aria-label="Filtrar logs" />
+                <select id="logLimit" aria-label="Quantidade de logs">
+                  <option value="100">100</option>
+                  <option value="200" selected>200</option>
+                  <option value="500">500</option>
+                </select>
+                <button class="btn btn-ghost btn-sm" id="btnLogsRefresh" type="button">Atualizar</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="table table-logs">
+                <thead>
+                  <tr>
+                    <th>Data/Hora</th>
+                    <th>Usuário</th>
+                    <th>Ação</th>
+                    <th>Detalhes</th>
+                  </tr>
+                </thead>
+                <tbody id="logsTbody"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="logsEmpty" hidden>
+              <div class="empty-icon" aria-hidden="true">🧾</div>
+              <h3>Nenhum log encontrado</h3>
+              <p>Ajuste o filtro ou aguarde novas atividades.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="page-footer">
+        SQLite + TypeORM · banco salvo em <code>data/inventario.sqlite</code>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Modal de cadastro/edição -->
+  <div class="overlay" id="itemOverlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <h2 id="modalTitle">Adicionar item</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar">
+          <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <form id="itemForm" novalidate>
+        <div class="grid">
+          <label class="field span-2">
+            <span>Nome do Item <b class="req">*</b></span>
+            <div class="autocomplete">
+              <input name="nome" type="text" maxlength="150" placeholder="Ex.: Dell Latitude 5540" required autocomplete="off" role="combobox" aria-expanded="false" aria-controls="nameSuggest" aria-autocomplete="list" />
+              <ul class="suggest" id="nameSuggest" role="listbox" aria-label="Itens com nome parecido" hidden></ul>
+            </div>
+          </label>
+
+          <label class="field">
+            <span>Quantidade</span>
+            <input name="quantidade" type="number" min="0" step="1" value="1" />
+          </label>
+
+          <label class="field">
+            <span>Seção</span>
+            <select name="categoria"></select>
+          </label>
+
+          <label class="field">
+            <span>Localização</span>
+            <div class="autocomplete">
+              <input name="localizacao" type="text" maxlength="150" placeholder="Ex.: Almoxarifado · Prateleira 2" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="locSuggest" aria-autocomplete="list" />
+              <ul class="suggest" id="locSuggest" role="listbox" aria-label="Localizações parecidas" hidden></ul>
+            </div>
+          </label>
+
+          <label class="field">
+            <span>Serial</span>
+            <input name="serial" type="text" maxlength="100" placeholder="Ex.: SN8F2KJ21" />
+          </label>
+
+          <label class="field">
+            <span>Patrimônio</span>
+            <input name="patrimonio" type="text" maxlength="100" placeholder="Ex.: PT-10234" />
+          </label>
+
+          <label class="field">
+            <span>Atribuição</span>
+            <input name="atribuicao" type="text" maxlength="150" placeholder="Ex.: Carlos · RH" />
+          </label>
+
+          <fieldset class="field span-2 radio-group">
+            <legend>Danificado</legend>
+            <label class="radio">
+              <input type="radio" name="danificado" value="nao" checked />
+              <span class="radio-box" aria-hidden="true"></span>
+              Não
+            </label>
+            <label class="radio">
+              <input type="radio" name="danificado" value="sim" />
+              <span class="radio-box" aria-hidden="true"></span>
+              Sim
+            </label>
+          </fieldset>
+
+          <label class="field span-2">
+            <span>Observação</span>
+            <textarea name="observacao" rows="3" maxlength="2000" placeholder="Detalhes, condições, acessórios, pendências…"></textarea>
+          </label>
+        </div>
+
+        <p class="form-error" id="formError" hidden></p>
+
+        <div class="modal-foot">
+          <button type="button" class="btn btn-ghost" data-close>Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnSave">Salvar item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Diálogo de confirmação -->
+  <div class="overlay" id="confirmOverlay" hidden>
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="modal-head">
+        <h2 id="confirmTitle">Excluir item</h2>
+      </div>
+      <p class="confirm-text" id="confirmText">Tem certeza?</p>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost" id="confirmNo">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmYes">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

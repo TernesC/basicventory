@@ -1,0 +1,20 @@
+@if (confirm.state(); as s) {
+  @if (s.aberto) {
+    <div class="overlay">
+      <div class="modal modal-sm" role="alertdialog" aria-modal="true">
+        <div class="modal-head">
+          <h2>{{ s.titulo }}</h2>
+        </div>
+        <p class="confirm-text">{{ s.mensagem }}</p>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-ghost" (click)="confirm.confirm(false)">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-danger" (click)="confirm.confirm(true)">
+            Excluir
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+}
